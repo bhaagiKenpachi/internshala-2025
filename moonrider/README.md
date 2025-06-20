@@ -27,7 +27,7 @@ internsala-2025/
 
 ## 🎯 Assignment Overview
 
-### Task 1: Backend - Identity Reconciliation ✅ COMPLETED
+### Task 1: Backend - Identity Reconciliation
 
 **Problem**: Dr. Chandrashekar uses different email addresses and phone numbers for each purchase on Zamazon.com to maintain anonymity. Moonrider needs to link these different contact details to provide personalized customer experiences.
 
@@ -40,16 +40,6 @@ internsala-2025/
 
 **Implementation**: Located in the `moonrider/` folder
 
-### Task 2: DevOps - Containerization, Version Control, and Scalable Deployment
-
-**Status**: Not yet implemented
-
-**Requirements**:
-- Containerize microservice with Docker
-- Implement version management with Git
-- Deploy to Kubernetes with scalability
-- Automate CI/CD pipelines
-- Implement monitoring and logging
 
 ## 🚀 Quick Start
 
@@ -92,13 +82,6 @@ curl -X POST http://localhost:8080/identify \
 - **Containerization**: Docker & Docker Compose
 - **Testing**: Postman Collection, Unit Tests, Integration Tests
 
-### Task 2 (Planned)
-- **Containerization**: Docker
-- **Orchestration**: Kubernetes/Minikube
-- **CI/CD**: GitHub Actions or Jenkins
-- **Monitoring**: Prometheus & Grafana
-- **Infrastructure**: Terraform
-
 ## 🧪 Testing
 
 ### Automated Tests
@@ -117,31 +100,3 @@ go test -v ./...
 1. Import the collection and environment
 2. Run the collection in Postman
 3. Review test results
-
-## 📊 Project Status
-
-| Task | Status | Completion |
-|------|--------|------------|
-| Task 1: Backend Identity Reconciliation | ✅ Complete | 100% |
-| Task 2: DevOps & Containerization | ⏳ Not Started | 0% |
-
-## 🎯 Next Steps
-
-1. **Task 2 Implementation**: Begin DevOps task implementation
-2. **Enhancement**: Add authentication and authorization
-3. **Monitoring**: Implement comprehensive logging and metrics
-4. **Documentation**: Add API documentation with Swagger
-5. **Testing**: Expand test coverage
-
-## 📞 Support
-
-For questions or issues:
-1. Check the documentation in the `moonrider/` folder
-2. Review the implementation summary
-3. Test with the provided Postman collection
-4. Check service logs for debugging
-
----
-
-**Repository**: [GitHub Link]
-**Assignment**: Cloud and Backend Assignment - Internsala 2025 
