@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: product-catalog-v1
+  labels:
+    name: product-catalog-v1
+    version: v1.0 

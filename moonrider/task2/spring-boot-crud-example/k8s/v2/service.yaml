@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-catalog-v2-service
+  namespace: product-catalog-v2
+  labels:
+    app: product-catalog
+    version: v2.0
+spec:
+  selector:
+    app: product-catalog
+    version: v2.0
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  type: ClusterIP 

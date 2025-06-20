@@ -1,0 +1,118 @@
+pipeline {
+    agent any
+    
+    environment {
+        DOCKER_IMAGE = 'luffybhaagi/product-catalog'
+        DOCKER_TAG = "${env.BUILD_NUMBER}"
+        KUBECONFIG = credentials('kubeconfig')
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                script {
+                    echo 'Building Spring Boot application...'
+                    sh 'mvn clean package -DskipTests'
+                }
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                script {
+                    echo 'Running tests...'
+                    sh 'mvn test'
+                }
+            }
+            post {
+                always {
+                    publishTestResults testResultsPattern: '**/target/surefire-reports/*.xml'
+                }
+            }
+        }
+        
+        stage('Docker Build') {
+            steps {
+                script {
+                    echo 'Building Docker image...'
+                    sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} ."
+                    sh "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest"
+                }
+            }
+        }
+        
+        stage('Docker Push') {
+            steps {
+                script {
+                    echo 'Pushing Docker image...'
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+                        sh "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                        sh "docker push ${DOCKER_IMAGE}:latest"
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    echo 'Deploying to Kubernetes...'
+                    
+                    // Determine version based on branch
+                    def version = 'v1.0'
+                    if (env.BRANCH_NAME == 'v1.1') {
+                        version = 'v1.1'
+                    } else if (env.BRANCH_NAME == 'v2.0') {
+                        version = 'v2.0'
+                    }
+                    
+                    // Update deployment with new image
+                    sh "kubectl set image deployment/product-catalog-${version} product-catalog=${DOCKER_IMAGE}:${DOCKER_TAG} -n product-catalog-${version}"
+                    
+                    // Wait for rollout
+                    sh "kubectl rollout status deployment/product-catalog-${version} -n product-catalog-${version}"
+                }
+            }
+        }
+        
+        stage('Integration Tests') {
+            steps {
+                script {
+                    echo 'Running integration tests...'
+                    
+                    def version = 'v1.0'
+                    if (env.BRANCH_NAME == 'v1.1') {
+                        version = 'v1.1'
+                    } else if (env.BRANCH_NAME == 'v2.0') {
+                        version = 'v2.0'
+                    }
+                    
+                    // Wait for service to be ready
+                    sh "kubectl wait --for=condition=ready pod -l app=product-catalog,version=${version} -n product-catalog-${version} --timeout=300s"
+                    
+                    // Run health check
+                    sh "kubectl exec -n product-catalog-${version} \$(kubectl get pods -n product-catalog-${version} -l app=product-catalog,version=${version} -o jsonpath='{.items[0].metadata.name}') -- curl -f http://localhost:8080/health"
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
+    }
+} 
