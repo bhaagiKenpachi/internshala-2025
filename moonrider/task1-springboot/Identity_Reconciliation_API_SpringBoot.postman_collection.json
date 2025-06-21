@@ -1,0 +1,551 @@
+{
+    "info": {
+        "name": "Identity Reconciliation API (Spring Boot)",
+        "description": "Comprehensive test collection for the Spring Boot Identity Reconciliation Service",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Health Check",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{base_url}}/api/v1/health",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "v1",
+                        "health"
+                    ]
+                },
+                "description": "Health check endpoint to verify the service is running properly."
+            },
+            "response": []
+        },
+        {
+            "name": "Identity Reconciliation",
+            "item": [
+                {
+                    "name": "1. New Customer - Doc's First Purchase",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response has contact object\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response).to.have.property('contact');",
+                                    "    pm.expect(response.contact).to.have.property('primaryContactId');",
+                                    "    pm.expect(response.contact).to.have.property('emails');",
+                                    "    pm.expect(response.contact).to.have.property('phoneNumbers');",
+                                    "    pm.expect(response.contact).to.have.property('secondaryContactIds');",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Primary contact ID is set\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response.contact.primaryContactId).to.be.a('number');",
+                                    "    pm.expect(response.contact.primaryContactId).to.be.greaterThan(0);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Email is included in response\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response.contact.emails).to.include('doc@example.com');",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Phone number is included in response\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response.contact.phoneNumbers).to.include('1234567890');",
+                                    "});",
+                                    "",
+                                    "pm.test(\"No secondary contacts for new customer\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response.contact.secondaryContactIds).to.be.an('array').that.is.empty;",
+                                    "});",
+                                    "",
+                                    "// Store the primary contact ID for future tests",
+                                    "const response = pm.response.json();",
+                                    "if (response.contact && response.contact.primaryContactId) {",
+                                    "    pm.environment.set('doc_primary_contact_id', response.contact.primaryContactId.toString());",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{test_email_1}}\",\n  \"phoneNumber\": \"{{test_phone_1}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/identify",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "identify"
+                            ]
+                        },
+                        "description": "Creates a new primary contact for Doc's first purchase. Should return a new primary contact ID."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "2. Same Customer - New Phone Number",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Primary contact ID matches previous\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    const expectedId = pm.environment.get('doc_primary_contact_id');",
+                                    "    pm.expect(response.contact.primaryContactId.toString()).to.equal(expectedId);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Both phone numbers are included\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response.contact.phoneNumbers).to.include('1234567890');",
+                                    "    pm.expect(response.contact.phoneNumbers).to.include('0987654321');",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Email is still included\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response.contact.emails).to.include('doc@example.com');",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Secondary contact is created\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response.contact.secondaryContactIds).to.be.an('array').that.is.not.empty;",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{test_email_1}}\",\n  \"phoneNumber\": \"{{test_phone_2}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/identify",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "identify"
+                            ]
+                        },
+                        "description": "Links Doc's new phone number to his existing contact. Should create a secondary contact linked to the primary."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "3. Same Customer - New Email",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Primary contact ID matches previous\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    const expectedId = pm.environment.get('doc_primary_contact_id');",
+                                    "    pm.expect(response.contact.primaryContactId.toString()).to.equal(expectedId);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Both emails are included\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response.contact.emails).to.include('doc@example.com');",
+                                    "    pm.expect(response.contact.emails).to.include('doc2@example.com');",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Phone numbers are still included\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response.contact.phoneNumbers).to.include('1234567890');",
+                                    "    pm.expect(response.contact.phoneNumbers).to.include('0987654321');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{test_email_2}}\",\n  \"phoneNumber\": \"{{test_phone_1}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/identify",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "identify"
+                            ]
+                        },
+                        "description": "Links Doc's new email to his existing contact using the same phone number. Should create a secondary contact linked to the primary."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "4. Another Customer - Alice",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"New primary contact is created\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response.contact.primaryContactId).to.be.a('number');",
+                                    "    pm.expect(response.contact.primaryContactId).to.be.greaterThan(0);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Primary contact ID is different from Doc's\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    const docId = pm.environment.get('doc_primary_contact_id');",
+                                    "    pm.expect(response.contact.primaryContactId.toString()).to.not.equal(docId);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Alice's email is included\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response.contact.emails).to.include('alice@example.com');",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Alice's phone is included\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response.contact.phoneNumbers).to.include('5555555555');",
+                                    "});",
+                                    "",
+                                    "// Store Alice's primary contact ID",
+                                    "const response = pm.response.json();",
+                                    "if (response.contact && response.contact.primaryContactId) {",
+                                    "    pm.environment.set('alice_primary_contact_id', response.contact.primaryContactId.toString());",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{alice_email}}\",\n  \"phoneNumber\": \"{{alice_phone}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/identify",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "identify"
+                            ]
+                        },
+                        "description": "Creates a new primary contact for Alice (different person). Should return a new primary contact ID different from Doc's."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "5. Link Alice's New Contact Info",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Primary contact ID matches Alice's\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    const expectedId = pm.environment.get('alice_primary_contact_id');",
+                                    "    pm.expect(response.contact.primaryContactId.toString()).to.equal(expectedId);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Both of Alice's emails are included\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response.contact.emails).to.include('alice@example.com');",
+                                    "    pm.expect(response.contact.emails).to.include('alice2@example.com');",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Alice's phone is still included\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response.contact.phoneNumbers).to.include('5555555555');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"alice2@example.com\",\n  \"phoneNumber\": \"{{alice_phone}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/identify",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "identify"
+                            ]
+                        },
+                        "description": "Links Alice's new email to her existing contact using the same phone number. Should create a secondary contact linked to Alice's primary."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Main identity reconciliation endpoint that processes contact information and links related contacts."
+        },
+        {
+            "name": "Validation Tests",
+            "item": [
+                {
+                    "name": "Empty Email Validation",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 400\", function () {",
+                                    "    pm.response.to.have.status(400);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Error message is present\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response).to.have.property('error');",
+                                    "    pm.expect(response).to.have.property('details');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"\",\n  \"phoneNumber\": \"1234567890\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/identify",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "identify"
+                            ]
+                        },
+                        "description": "Tests validation for empty email field. Should return 400 Bad Request."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Empty Phone Validation",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 400\", function () {",
+                                    "    pm.response.to.have.status(400);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Error message is present\", function () {",
+                                    "    const response = pm.response.json();",
+                                    "    pm.expect(response).to.have.property('error');",
+                                    "    pm.expect(response).to.have.property('details');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"test@example.com\",\n  \"phoneNumber\": \"\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/identify",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "identify"
+                            ]
+                        },
+                        "description": "Tests validation for empty phone number field. Should return 400 Bad Request."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Tests for input validation and error handling."
+        },
+        {
+            "name": "Performance Tests",
+            "item": [
+                {
+                    "name": "Performance Test - New Contact",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Response time is less than 2000ms\", function () {",
+                                    "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"perf@example.com\",\n  \"phoneNumber\": \"9999999999\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/identify",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "identify"
+                            ]
+                        },
+                        "description": "Tests response time performance for a new contact creation."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Performance and load testing scenarios."
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Pre-request script to set up test environment",
+                    "console.log('Running Identity Reconciliation API (Spring Boot) tests...');"
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Global test script",
+                    "pm.test(\"Response time is less than 5000ms\", function () {",
+                    "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                    "});"
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8080",
+            "type": "string"
+        }
+    ]
+}
