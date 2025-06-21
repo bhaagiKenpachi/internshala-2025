@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_IMAGE = 'luffybhaagi/product-catalog'
+        DOCKER_IMAGE = 'luffybhaagi008/product-catalog'
         DOCKER_TAG = "${env.BUILD_NUMBER}"
         DOCKER_HUB_CREDENTIALS = 'docker-hub-credentials'
         PROJECT_DIR = 'moonrider/task2/spring-boot-crud-example'

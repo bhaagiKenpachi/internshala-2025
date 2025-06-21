@@ -6,7 +6,7 @@
 set -e
 
 # Configuration
-DOCKER_IMAGE="luffybhaagi/product-catalog"
+DOCKER_IMAGE="luffybhaagi008/product-catalog"
 DOCKER_TAG="test-$(date +%Y%m%d-%H%M%S)"
 
 echo "=== Docker Hub Push Test Script ==="
