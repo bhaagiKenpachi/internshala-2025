@@ -30,7 +30,8 @@ export default function OnboardingForm() {
         handleSubmit,
         formState: { errors },
         watch,
-        setValue
+        setValue,
+        reset
     } = useForm<FormData>({
         resolver: yupResolver(schema),
         defaultValues: {
@@ -56,13 +57,43 @@ export default function OnboardingForm() {
         setValue("languages", newLanguages);
     };
 
+    const saveToDashboard = (data: FormData) => {
+        // Get existing submissions from localStorage
+        const existingSubmissions = JSON.parse(localStorage.getItem('artistSubmissions') || '[]');
+
+        // Create new submission
+        const newSubmission = {
+            id: Date.now(), // Simple ID generation
+            name: data.name,
+            category: data.categories[0], // Use first category for display
+            location: data.location,
+            fee: data.feeRange,
+            status: "Pending",
+            submittedAt: new Date().toISOString().split('T')[0],
+            bio: data.bio,
+            languages: data.languages,
+            imageUrl: data.imageUrl
+        };
+
+        // Add to existing submissions
+        const updatedSubmissions = [newSubmission, ...existingSubmissions];
+
+        // Save back to localStorage
+        localStorage.setItem('artistSubmissions', JSON.stringify(updatedSubmissions));
+    };
+
     const onSubmit = async (data: FormData) => {
         setIsSubmitting(true);
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Save to dashboard
+        saveToDashboard(data);
+
         console.log("Form submitted:", data);
         setSubmitSuccess(true);
         setIsSubmitting(false);
+        reset(); // Reset form after successful submission
     };
 
     if (submitSuccess) {
@@ -71,12 +102,20 @@ export default function OnboardingForm() {
                 <div className="text-green-500 text-8xl mb-6">✓</div>
                 <h2 className="text-3xl font-bold mb-4 text-gray-900">Application Submitted!</h2>
                 <p className="text-lg text-gray-600 mb-8">Thank you for your interest in joining Artistly.com. We'll review your application and get back to you soon.</p>
-                <button
-                    onClick={() => setSubmitSuccess(false)}
-                    className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl"
-                >
-                    Submit Another Application
-                </button>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button
+                        onClick={() => setSubmitSuccess(false)}
+                        className="bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl"
+                    >
+                        Submit Another Application
+                    </button>
+                    <a
+                        href="/dashboard"
+                        className="bg-gray-100 text-gray-700 px-8 py-4 rounded-lg hover:bg-gray-200 transition-all duration-200 font-semibold text-lg border border-gray-300"
+                    >
+                        View Dashboard
+                    </a>
+                </div>
             </div>
         );
     }
