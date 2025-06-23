@@ -1,25 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import ArtistCard from "@/components/ArtistCard";
 import FilterBlock from "@/components/FilterBlock";
-import artists from "@/data/artists.json";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { loadBrowseArtists, setFilters } from "@/store/artistsSlice";
 
-export default function ArtistsPage() {
-    const [filters, setFilters] = useState({
-        category: "All",
-        location: "All",
-        priceRange: "All"
-    });
+function ArtistsPageContent() {
+    const dispatch = useAppDispatch();
+    const searchParams = useSearchParams();
+    const { browseArtists, filters, loading, error } = useAppSelector((state) => state.artists);
+
+    useEffect(() => {
+        dispatch(loadBrowseArtists());
+    }, [dispatch]);
+
+    // Apply category filter from query param on mount
+    useEffect(() => {
+        const category = searchParams.get("category");
+        if (category) {
+            dispatch(setFilters({ category }));
+        }
+    }, [dispatch, searchParams]);
 
     const handleFilterChange = (filterType: string, value: string) => {
-        setFilters(prev => ({
-            ...prev,
-            [filterType]: value
-        }));
+        dispatch(setFilters({ [filterType]: value }));
     };
 
-    const filteredArtists = artists.filter(artist => {
+    const handleReset = () => {
+        dispatch(setFilters({ category: "All", location: "All", priceRange: "All" }));
+    };
+
+    const filteredArtists = browseArtists.filter(artist => {
         const categoryMatch = filters.category === "All" || artist.category === filters.category;
         const locationMatch = filters.location === "All" || artist.location === filters.location;
 
@@ -39,16 +52,37 @@ export default function ArtistsPage() {
         return categoryMatch && locationMatch && priceMatch;
     });
 
+    if (loading) {
+        return (
+            <div className="py-8">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading artists...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="py-8">
+                <div className="text-center">
+                    <p className="text-red-600">Error: {error}</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="py-8">
             <div className="text-center mb-8">
                 <h1 className="text-4xl font-bold mb-4 text-gray-900">Browse Artists</h1>
                 <p className="text-lg text-gray-600">Discover talented performers for your next event</p>
             </div>
-            <FilterBlock filters={filters} onFilterChange={handleFilterChange} />
+            <FilterBlock filters={filters} onFilterChange={handleFilterChange} onReset={handleReset} />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filteredArtists.map((artist, idx) => (
-                    <ArtistCard key={idx} {...artist} />
+                {filteredArtists.map((artist) => (
+                    <ArtistCard key={artist.id} {...artist} />
                 ))}
             </div>
             {filteredArtists.length === 0 && (
@@ -59,5 +93,20 @@ export default function ArtistsPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function ArtistsPage() {
+    return (
+        <Suspense fallback={
+            <div className="py-8">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading...</p>
+                </div>
+            </div>
+        }>
+            <ArtistsPageContent />
+        </Suspense>
     );
 } 

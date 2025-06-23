@@ -4,6 +4,9 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { useState } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { submitArtist } from "@/store/artistsSlice";
+import { useRouter } from "next/navigation";
 
 const schema = yup.object({
     name: yup.string().required("Name is required").min(2, "Name must be at least 2 characters"),
@@ -20,7 +23,9 @@ const languages = ["English", "Hindi", "Spanish", "French", "German", "Chinese",
 const feeRanges = ["$100 - $300", "$300 - $500", "$500 - $800", "$800 - $1200", "$1200+"];
 
 export default function OnboardingForm() {
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const dispatch = useAppDispatch();
+    const { loading, error } = useAppSelector((state) => state.artists);
+    const router = useRouter();
     const [submitSuccess, setSubmitSuccess] = useState(false);
 
     const {
@@ -56,44 +61,24 @@ export default function OnboardingForm() {
     };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const saveToDashboard = (data: any) => {
-        // Get existing submissions from localStorage
-        const existingSubmissions = JSON.parse(localStorage.getItem('artistSubmissions') || '[]');
-
-        // Create new submission
-        const newSubmission = {
-            id: Date.now(), // Simple ID generation
-            name: data.name,
-            category: data.categories[0], // Use first category for display
-            location: data.location,
-            fee: data.feeRange,
-            status: "Pending",
-            submittedAt: new Date().toISOString().split('T')[0],
-            bio: data.bio,
-            languages: data.languages,
-            imageUrl: data.imageUrl
-        };
-
-        // Add to existing submissions
-        const updatedSubmissions = [newSubmission, ...existingSubmissions];
-
-        // Save back to localStorage
-        localStorage.setItem('artistSubmissions', JSON.stringify(updatedSubmissions));
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const onSubmit = async (data: any) => {
-        setIsSubmitting(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        try {
+            const artistData = {
+                name: data.name,
+                category: data.categories[0], // Use first category for display
+                location: data.location,
+                fee: data.feeRange,
+                bio: data.bio,
+                languages: data.languages,
+                imageUrl: data.imageUrl
+            };
 
-        // Save to dashboard
-        saveToDashboard(data);
-
-        console.log("Form submitted:", data);
-        setSubmitSuccess(true);
-        setIsSubmitting(false);
-        reset(); // Reset form after successful submission
+            await dispatch(submitArtist(artistData)).unwrap();
+            setSubmitSuccess(true);
+            reset(); // Reset form after successful submission
+        } catch (err) {
+            console.error("Failed to submit artist:", err);
+        }
     };
 
     if (submitSuccess) {
@@ -109,12 +94,12 @@ export default function OnboardingForm() {
                     >
                         Submit Another Application
                     </button>
-                    <a
-                        href="/dashboard"
+                    <button
+                        onClick={() => router.push("/dashboard")}
                         className="bg-gray-100 text-gray-700 px-8 py-4 rounded-lg hover:bg-gray-200 transition-all duration-200 font-semibold text-lg border border-gray-300"
                     >
                         View Dashboard
-                    </a>
+                    </button>
                 </div>
             </div>
         );
@@ -122,6 +107,12 @@ export default function OnboardingForm() {
 
     return (
         <div className="bg-white rounded-xl shadow-lg p-8">
+            {error && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-600">{error}</p>
+                </div>
+            )}
+
             <form onSubmit={handleSubmit(onSubmit)} className="max-w-2xl mx-auto space-y-8">
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-3">Full Name *</label>
@@ -217,10 +208,10 @@ export default function OnboardingForm() {
 
                 <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={loading}
                     className="w-full bg-blue-600 text-white py-4 rounded-lg font-semibold text-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
-                    {isSubmitting ? (
+                    {loading ? (
                         <span className="flex items-center justify-center">
                             <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

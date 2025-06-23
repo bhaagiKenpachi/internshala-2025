@@ -1,10 +1,10 @@
 import Link from "next/link";
 
 const categories = [
-  { name: "Singers", icon: "🎤", description: "Vocal performers" },
-  { name: "Dancers", icon: "💃", description: "Dance artists" },
-  { name: "Speakers", icon: "🎤", description: "Public speakers" },
-  { name: "DJs", icon: "🎧", description: "Music DJs" },
+  { name: "Singers", icon: "🎤", description: "Vocal performers", filter: "Singer" },
+  { name: "Dancers", icon: "💃", description: "Dance artists", filter: "Dancer" },
+  { name: "Speakers", icon: "🎤", description: "Public speakers", filter: "Speaker" },
+  { name: "DJs", icon: "🎧", description: "Music DJs", filter: "DJ" },
 ];
 
 export default function Home() {
@@ -40,13 +40,17 @@ export default function Home() {
         <h2 className="text-3xl font-bold mb-8 text-center text-gray-900">Artist Categories</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {categories.map((cat) => (
-            <div key={cat.name} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 border border-gray-100">
+            <Link
+              key={cat.name}
+              href={`/artists?category=${encodeURIComponent(cat.filter)}`}
+              className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-300 border border-gray-100 block"
+            >
               <div className="w-16 h-16 mb-4 flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 rounded-full mx-auto">
                 <span className="text-3xl">{cat.icon}</span>
               </div>
               <h3 className="font-bold text-xl text-gray-900 text-center mb-2">{cat.name}</h3>
               <p className="text-gray-600 text-center text-sm">{cat.description}</p>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
