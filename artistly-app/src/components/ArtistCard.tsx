@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 type ArtistCardProps = {
     name: string;
     category: string;
@@ -11,7 +13,13 @@ export default function ArtistCard({ name, category, price, location, imageUrl }
         <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center gap-4 w-full max-w-sm hover:shadow-xl transition-all duration-300 border border-gray-100">
             <div className="w-24 h-24 bg-gradient-to-br from-blue-50 to-blue-100 rounded-full flex items-center justify-center mb-2 overflow-hidden border-4 border-white shadow-lg">
                 {imageUrl ? (
-                    <img src={imageUrl} alt={name} className="object-cover w-full h-full rounded-full" />
+                    <Image
+                        src={imageUrl}
+                        alt={name}
+                        width={96}
+                        height={96}
+                        className="object-cover rounded-full"
+                    />
                 ) : (
                     <span className="text-4xl">🎤</span>
                 )}
