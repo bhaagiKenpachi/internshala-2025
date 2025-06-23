@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { useState } from "react";
 
 type ArtistCardProps = {
     name: string;
@@ -9,16 +10,24 @@ type ArtistCardProps = {
 };
 
 export default function ArtistCard({ name, category, price, location, imageUrl }: ArtistCardProps) {
+    const [imageError, setImageError] = useState(false);
+
+    const handleImageError = () => {
+        setImageError(true);
+    };
+
     return (
         <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center gap-4 w-full max-w-sm hover:shadow-xl transition-all duration-300 border border-gray-100">
             <div className="w-24 h-24 bg-gradient-to-br from-blue-50 to-blue-100 rounded-full flex items-center justify-center mb-2 overflow-hidden border-4 border-white shadow-lg">
-                {imageUrl ? (
+                {imageUrl && !imageError ? (
                     <Image
                         src={imageUrl}
                         alt={name}
                         width={96}
                         height={96}
                         className="object-cover rounded-full"
+                        onError={handleImageError}
+                        unoptimized={true}
                     />
                 ) : (
                     <span className="text-4xl">🎤</span>

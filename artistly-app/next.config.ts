@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
         pathname: '/api/portraits/**',
       },
     ],
+    unoptimized: true,
+  },
+  experimental: {
+    optimizePackageImports: ['@reduxjs/toolkit'],
   },
 };
 
