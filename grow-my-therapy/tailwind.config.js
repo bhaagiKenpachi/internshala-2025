@@ -6,6 +6,9 @@ module.exports = {
     ],
     theme: {
         extend: {
+            fontFamily: {
+                para: ['"Noto Sans"', 'sans-serif'],
+              },
             colors: {
                 main1: "#B5DBDF"
             }
