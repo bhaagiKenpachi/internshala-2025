@@ -2,3 +2,5 @@ moonrider/task2/spring-boot-crud-example/target/
 jenkins-data/
 .idea/
 moonrider/task1-springboot/target/
+
+**/node_modules
