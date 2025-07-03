@@ -1,0 +1,38 @@
+{
+  "name": "celeb-network-backend",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "build": "nest build",
+    "deploy": "serverless deploy"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/config": "^4.0.2",
+    "@nestjs/core": "^10.0.0",
+    "@nestjs/jwt": "^10.0.0",
+    "@nestjs/passport": "^10.0.0",
+    "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/swagger": "^7.0.0",
+    "@nestjs/typeorm": "^11.0.0",
+    "@prisma/client": "6.11.0",
+    "aws-serverless-express": "^3.4.0",
+    "bcrypt": "^5.1.0",
+    "class-validator": "^0.14.2",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "pg": "^8.16.3",
+    "reflect-metadata": "^0.1.13",
+    "rxjs": "^7.8.1",
+    "typeorm": "^0.3.25"
+  },
+  "devDependencies": {
+    "@types/node": "^20.5.0",
+    "serverless": "^3.37.0",
+    "serverless-offline": "^12.0.4",
+    "serverless-webpack": "^5.8.0",
+    "ts-loader": "^9.4.2",
+    "typescript": "^5.2.0"
+  }
+}
