@@ -4,3 +4,5 @@ jenkins-data/
 moonrider/task1-springboot/target/
 
 **/node_modules
+**/dist
+**/.next

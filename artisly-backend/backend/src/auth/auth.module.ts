@@ -1,16 +1,17 @@
 // src/auth/auth.module.ts
 import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Fan } from '../celebrity/entities/fan.entity';
-import { Celebrity } from '../celebrity/entities/celebrity.entity';
+import { User } from '../user/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Fan, Celebrity]),
+    TypeOrmModule.forFeature([User]),
     JwtModule.register({ secret: 'your_jwt_secret' }),
   ],
   controllers: [AuthController],
+  providers: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule { }

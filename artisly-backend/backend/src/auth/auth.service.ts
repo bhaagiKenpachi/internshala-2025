@@ -8,7 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 export class AuthService {
   constructor(
     @InjectRepository(User) private userRepo: Repository<User>
-  ) {}
+  ) { }
 
   async validateUser(email: string, password: string) {
     const user = await this.userRepo.findOne({ where: { email } });
@@ -16,5 +16,20 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
     return user;
+  }
+
+  async createUser(email: string, password: string, role: string) {
+    const existingUser = await this.userRepo.findOne({ where: { email } });
+    if (existingUser) {
+      throw new UnauthorizedException('User already exists');
+    }
+
+    const user = this.userRepo.create({
+      email,
+      password,
+      role: role as 'fan' | 'celebrity'
+    });
+
+    return this.userRepo.save(user);
   }
 }

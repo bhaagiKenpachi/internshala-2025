@@ -9,7 +9,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors(); // 
   await app.listen(3001);
-   // Seed users on server start
+  // Seed users on server start
   //  const userRepo = getRepository(User);
   //  const existingFan = await userRepo.findOne({ where: { email: 'fan' } });
   //  if (!existingFan) {
