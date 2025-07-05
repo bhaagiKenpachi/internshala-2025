@@ -1,0 +1,10 @@
+com/moonrider/identityreconciliation/entity/Contact.class
+com/moonrider/identityreconciliation/service/IdentityReconciliationService.class
+com/moonrider/identityreconciliation/dto/IdentifyResponse$ContactInfo.class
+com/moonrider/identityreconciliation/dto/IdentifyResponse.class
+com/moonrider/identityreconciliation/dto/IdentifyRequest.class
+com/moonrider/identityreconciliation/entity/Contact$LinkPrecedence.class
+com/moonrider/identityreconciliation/controller/IdentityController.class
+com/moonrider/identityreconciliation/IdentityReconciliationApplication.class
+com/moonrider/identityreconciliation/repository/ContactRepository.class
+com/moonrider/identityreconciliation/exception/GlobalExceptionHandler.class

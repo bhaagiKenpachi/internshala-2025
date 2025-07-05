@@ -1,0 +1,47 @@
+[
+    {
+        "id": 1,
+        "name": "Priya Sharma",
+        "category": "Singer",
+        "location": "Mumbai",
+        "fee": "$500 - $800",
+        "status": "Pending",
+        "submittedAt": "2024-01-15"
+    },
+    {
+        "id": 2,
+        "name": "Rahul Kumar",
+        "category": "Dancer",
+        "location": "Delhi",
+        "fee": "$300 - $600",
+        "status": "Approved",
+        "submittedAt": "2024-01-14"
+    },
+    {
+        "id": 3,
+        "name": "Anjali Patel",
+        "category": "Speaker",
+        "location": "Bangalore",
+        "fee": "$400 - $700",
+        "status": "Under Review",
+        "submittedAt": "2024-01-13"
+    },
+    {
+        "id": 4,
+        "name": "Vikram Singh",
+        "category": "DJ",
+        "location": "Goa",
+        "fee": "$600 - $1000",
+        "status": "Pending",
+        "submittedAt": "2024-01-12"
+    },
+    {
+        "id": 5,
+        "name": "Meera Reddy",
+        "category": "Singer",
+        "location": "Chennai",
+        "fee": "$450 - $750",
+        "status": "Approved",
+        "submittedAt": "2024-01-11"
+    }
+]

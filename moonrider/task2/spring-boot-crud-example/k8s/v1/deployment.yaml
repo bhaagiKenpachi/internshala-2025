@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-catalog-v1
+  namespace: product-catalog-v1
+  labels:
+    app: product-catalog
+    version: v1.0
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: product-catalog
+      version: v1.0
+  template:
+    metadata:
+      labels:
+        app: product-catalog
+        version: v1.0
+    spec:
+      containers:
+      - name: product-catalog
+        image: luffybhaagi/product-catalog:v1.0
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes"
+        - name: SERVER_PORT
+          value: "8080" 

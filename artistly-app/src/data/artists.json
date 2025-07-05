@@ -1,0 +1,44 @@
+[
+    {
+        "name": "Asha Singh",
+        "category": "Singer",
+        "price": "$500 - $1000",
+        "location": "Mumbai",
+        "imageUrl": "https://randomuser.me/api/portraits/women/1.jpg"
+    },
+    {
+        "name": "Rahul Mehra",
+        "category": "Dancer",
+        "price": "$300 - $700",
+        "location": "Delhi",
+        "imageUrl": "https://randomuser.me/api/portraits/men/2.jpg"
+    },
+    {
+        "name": "Priya Verma",
+        "category": "Speaker",
+        "price": "$400 - $900",
+        "location": "Bangalore",
+        "imageUrl": "https://randomuser.me/api/portraits/women/3.jpg"
+    },
+    {
+        "name": "DJ Rohan",
+        "category": "DJ",
+        "price": "$600 - $1200",
+        "location": "Goa",
+        "imageUrl": "https://randomuser.me/api/portraits/men/4.jpg"
+    },
+    {
+        "name": "Meera Kapoor",
+        "category": "Singer",
+        "price": "$550 - $1100",
+        "location": "Chennai",
+        "imageUrl": "https://randomuser.me/api/portraits/women/5.jpg"
+    },
+    {
+        "name": "Amit Joshi",
+        "category": "Dancer",
+        "price": "$350 - $800",
+        "location": "Pune",
+        "imageUrl": "https://randomuser.me/api/portraits/men/6.jpg"
+    }
+]

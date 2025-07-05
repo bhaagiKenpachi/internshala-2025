@@ -1,0 +1,637 @@
+{
+    "info": {
+        "_postman_id": "identity-reconciliation-api",
+        "name": "Identity Reconciliation API",
+        "description": "A comprehensive Postman collection for testing the Identity Reconciliation Service. This collection includes all endpoints, test scenarios, and environment variables for the Go-based REST API that handles customer identity reconciliation for Moonrider's integration with Zamazon.com.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_exporter_id": "identity-reconciliation"
+    },
+    "item": [
+        {
+            "name": "Health Check",
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\"Status code is 200\", function () {",
+                            "    pm.response.to.have.status(200);",
+                            "});",
+                            "",
+                            "pm.test(\"Response has correct structure\", function () {",
+                            "    const jsonData = pm.response.json();",
+                            "    pm.expect(jsonData).to.have.property('status');",
+                            "    pm.expect(jsonData.status).to.eql('healthy');",
+                            "});",
+                            "",
+                            "pm.test(\"Response time is less than 2000ms\", function () {",
+                            "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                            "});"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ],
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{base_url}}/health",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "health"
+                    ]
+                },
+                "description": "Health check endpoint to verify the service is running properly."
+            },
+            "response": []
+        },
+        {
+            "name": "Identity Reconciliation",
+            "item": [
+                {
+                    "name": "1. New Customer - Doc's First Purchase",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response has correct structure\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData).to.have.property('contact');",
+                                    "    pm.expect(jsonData.contact).to.have.property('primaryContactId');",
+                                    "    pm.expect(jsonData.contact).to.have.property('emails');",
+                                    "    pm.expect(jsonData.contact).to.have.property('phoneNumbers');",
+                                    "    pm.expect(jsonData.contact).to.have.property('secondaryContactIds');",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Primary contact ID is set\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.contact.primaryContactId).to.be.a('number');",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Email is included in response\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.contact.emails).to.include('doc@example.com');",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Phone number is included in response\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.contact.phoneNumbers).to.include('1234567890');",
+                                    "});",
+                                    "",
+                                    "// Store the primary contact ID for subsequent tests",
+                                    "const jsonData = pm.response.json();",
+                                    "pm.environment.set('doc_primary_contact_id', jsonData.contact.primaryContactId);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"doc@example.com\",\n  \"phoneNumber\": \"1234567890\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/identify",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "identify"
+                            ]
+                        },
+                        "description": "Creates a new primary contact for Doc's first purchase. This should create a new contact with ID 1."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "2. Same Customer - New Phone Number",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Same primary contact ID\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    const storedId = pm.environment.get('doc_primary_contact_id');",
+                                    "    pm.expect(jsonData.contact.primaryContactId).to.eql(parseInt(storedId));",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Both phone numbers are included\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.contact.phoneNumbers).to.include('1234567890');",
+                                    "    pm.expect(jsonData.contact.phoneNumbers).to.include('0987654321');",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Secondary contact IDs array is not empty\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.contact.secondaryContactIds).to.be.an('array');",
+                                    "    pm.expect(jsonData.contact.secondaryContactIds.length).to.be.greaterThan(0);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"doc@example.com\",\n  \"phoneNumber\": \"0987654321\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/identify",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "identify"
+                            ]
+                        },
+                        "description": "Tests linking a new phone number to the existing Doc contact. Should create a secondary contact linked to the primary."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "3. Same Customer - New Email",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Same primary contact ID\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    const storedId = pm.environment.get('doc_primary_contact_id');",
+                                    "    pm.expect(jsonData.contact.primaryContactId).to.eql(parseInt(storedId));",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Both emails are included\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.contact.emails).to.include('doc@example.com');",
+                                    "    pm.expect(jsonData.contact.emails).to.include('doc2@example.com');",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Secondary contact IDs array is not empty\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.contact.secondaryContactIds).to.be.an('array');",
+                                    "    pm.expect(jsonData.contact.secondaryContactIds.length).to.be.greaterThan(0);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"doc2@example.com\",\n  \"phoneNumber\": \"1234567890\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/identify",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "identify"
+                            ]
+                        },
+                        "description": "Tests linking a new email to the existing Doc contact using the same phone number. Should create a secondary contact linked to the primary."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "4. Different Customer - Alice",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Different primary contact ID\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    const storedId = pm.environment.get('doc_primary_contact_id');",
+                                    "    pm.expect(jsonData.contact.primaryContactId).to.not.eql(parseInt(storedId));",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Alice's email is included\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.contact.emails).to.include('alice@example.com');",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Alice's phone number is included\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.contact.phoneNumbers).to.include('5555555555');",
+                                    "});",
+                                    "",
+                                    "// Store Alice's primary contact ID",
+                                    "const jsonData = pm.response.json();",
+                                    "pm.environment.set('alice_primary_contact_id', jsonData.contact.primaryContactId);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"alice@example.com\",\n  \"phoneNumber\": \"5555555555\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/identify",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "identify"
+                            ]
+                        },
+                        "description": "Creates a new primary contact for Alice (different person). Should create a new primary contact with a different ID."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "5. Link Alice's New Contact Info",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Same primary contact ID as Alice\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    const storedId = pm.environment.get('alice_primary_contact_id');",
+                                    "    pm.expect(jsonData.contact.primaryContactId).to.eql(parseInt(storedId));",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Both of Alice's emails are included\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.contact.emails).to.include('alice@example.com');",
+                                    "    pm.expect(jsonData.contact.emails).to.include('alice2@example.com');",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Secondary contact IDs array is not empty\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.contact.secondaryContactIds).to.be.an('array');",
+                                    "    pm.expect(jsonData.contact.secondaryContactIds.length).to.be.greaterThan(0);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"alice2@example.com\",\n  \"phoneNumber\": \"5555555555\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/identify",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "identify"
+                            ]
+                        },
+                        "description": "Links Alice's new email to her existing contact using the same phone number. Should create a secondary contact linked to Alice's primary."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Main identity reconciliation endpoint that processes contact information and links related contacts."
+        },
+        {
+            "name": "Edge Cases & Error Handling",
+            "item": [
+                {
+                    "name": "Empty Request",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 400\", function () {",
+                                    "    pm.response.to.have.status(400);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Error message is present\", function () {",
+                                    "    const responseText = pm.response.text();",
+                                    "    pm.expect(responseText).to.include('required');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/identify",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "identify"
+                            ]
+                        },
+                        "description": "Tests error handling for empty request body. Should return 400 Bad Request."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Only Email Provided",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Email is included in response\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.contact.emails).to.include('bob@example.com');",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Phone numbers array is empty or contains empty string\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.contact.phoneNumbers).to.be.an('array');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"bob@example.com\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/identify",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "identify"
+                            ]
+                        },
+                        "description": "Tests handling of request with only email provided. Should create a new contact with empty phone number."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Only Phone Number Provided",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Phone number is included in response\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.contact.phoneNumbers).to.include('2222222222');",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Emails array is empty or contains empty string\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.contact.emails).to.be.an('array');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"phoneNumber\": \"2222222222\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/identify",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "identify"
+                            ]
+                        },
+                        "description": "Tests handling of request with only phone number provided. Should create a new contact with empty email."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Invalid JSON",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 400\", function () {",
+                                    "    pm.response.to.have.status(400);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Error message is present\", function () {",
+                                    "    const responseText = pm.response.text();",
+                                    "    pm.expect(responseText).to.include('Invalid');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"test@example.com\",\n  \"phoneNumber\": \"1234567890\",\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/identify",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "identify"
+                            ]
+                        },
+                        "description": "Tests error handling for invalid JSON (trailing comma). Should return 400 Bad Request."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Tests for edge cases and error handling scenarios."
+        },
+        {
+            "name": "Performance Tests",
+            "item": [
+                {
+                    "name": "Response Time Test",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Response time is acceptable\", function () {",
+                                    "    pm.expect(pm.response.responseTime).to.be.below(1000);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"perf@example.com\",\n  \"phoneNumber\": \"9999999999\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/identify",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "identify"
+                            ]
+                        },
+                        "description": "Tests response time performance for a new contact creation."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Performance and load testing scenarios."
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Pre-request script to set up test environment",
+                    "console.log('Running Identity Reconciliation API tests...');"
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Global test script",
+                    "pm.test(\"Response time is less than 5000ms\", function () {",
+                    "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                    "});"
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8080",
+            "type": "string"
+        }
+    ]
+}
