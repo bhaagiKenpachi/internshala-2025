@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: yardstick-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: yardstick
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - yardstick-network
+
+  yardstick-app:
+    build: .
+    container_name: yardstick-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/yardstick?authSource=admin
+      - NODE_ENV=production
+    depends_on:
+      - mongodb
+    networks:
+      - yardstick-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  yardstick-network:
+    driver: bridge 
