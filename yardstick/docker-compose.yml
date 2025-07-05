@@ -34,7 +34,6 @@ services:
 volumes:
   mongodb_data:
 
-
 networks:
   yardstick-network:
-    driver: bridge
+    driver: bridge 
