@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Plus, TrendingUp, TrendingDown, DollarSign, Target, BarChart3, AlertTriangle, Lightbulb, Calendar } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, DollarSign, Target, BarChart3, AlertTriangle, Lightbulb } from "lucide-react";
 import { Transaction } from "./transactions/TransactionList";
 import { Budget } from "./transactions/BudgetManager";
 
