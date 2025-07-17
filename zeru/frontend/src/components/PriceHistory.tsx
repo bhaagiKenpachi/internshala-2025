@@ -73,37 +73,24 @@ export default function PriceHistory() {
         setError('');
 
         try {
-            // Generate timestamps for the last 30 days
-            const now = Math.floor(Date.now() / 1000);
-            const timestamps = [];
-            for (let i = 30; i >= 0; i--) {
-                timestamps.push(now - (i * 24 * 60 * 60));
+            // Fetch real price history from backend
+            const response = await priceApi.history({
+                token: customAddress,
+                network,
+            });
+            if (!response.history || response.history.length === 0) {
+                setError('No price history found for this token/network.');
+                setPriceHistory([]);
+            } else {
+                setPriceHistory(response.history.map(h => ({
+                    date: h.date,
+                    price: h.price,
+                    source: 'alchemy', // or 'interpolated' if you want to distinguish
+                })));
             }
-
-            // Fetch price data for each timestamp
-            const priceData: PriceData[] = [];
-            for (const timestamp of timestamps) {
-                try {
-                    const response = await priceApi.query({
-                        token: customAddress,
-                        network,
-                        timestamp
-                    });
-
-                    priceData.push({
-                        date: timestamp,
-                        price: response.price,
-                        source: response.source
-                    });
-                } catch (err) {
-                    // Skip failed requests, continue with available data
-                    console.log(`Failed to fetch price for ${new Date(timestamp * 1000).toISOString()}`);
-                }
-            }
-
-            setPriceHistory(priceData);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Failed to fetch price history');
+            setPriceHistory([]);
         } finally {
             setLoading(false);
         }

@@ -46,9 +46,22 @@ export interface ScheduleParams {
     network: string;
 }
 
+export interface PriceHistoryResponse {
+    history: Array<{
+        token: string;
+        network: string;
+        date: number;
+        price: number;
+    }>;
+}
+
 export const priceApi = {
     query: async (params: PriceQueryParams): Promise<PriceResponse> => {
         const response = await api.post('/api/price', params);
+        return response.data;
+    },
+    history: async (params: { token: string; network: string }): Promise<PriceHistoryResponse> => {
+        const response = await api.post('/api/price-history', params);
         return response.data;
     },
 };

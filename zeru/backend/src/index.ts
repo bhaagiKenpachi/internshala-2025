@@ -20,6 +20,11 @@ app.get('/', (req, res) => {
     res.json({ status: 'ok', message: 'Zeru Token Price Oracle API' });
 });
 
+// Start BullMQ worker with backend
+if (process.env.NODE_ENV !== 'test' && !process.env.WORKER_DISABLED) {
+    require('./worker');
+}
+
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

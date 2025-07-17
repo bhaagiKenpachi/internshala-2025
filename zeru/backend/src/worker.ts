@@ -5,6 +5,9 @@ import { connectMongo } from './db';
 import { TokenPrice } from './models/TokenPrice';
 import { getAlchemy } from './routes/price';
 import { fetchPriceFromAlchemy } from './utils/fetchPriceFromAlchemy';
+import { QuotaExceededError } from './utils/fetchPriceFromAlchemy';
+import { getDailyTimestamps, getStartOfDayUTC, isValidTimestamp } from './utils/timeUtils';
+import { redis } from './db';
 
 // Connect to MongoDB
 connectMongo().catch(console.error);
@@ -51,20 +54,61 @@ const getTokenCreationDate = async (alchemy: any, token: string, network: string
     throw new Error('Block timestamp not found');
 };
 
-const getDailyTimestamps = (from: number, to: number): number[] => {
-    const days = [];
-    let current = to; // Start from latest date (current time)
-    while (current >= from) {
-        days.push(current);
-        current -= 86400; // subtract 1 day (go backwards)
-    }
-    return days;
+// Process a batch of days in parallel
+const processBatch = async (
+    alchemy: any,
+    token: string,
+    network: string,
+    days: number[],
+    startIndex: number
+): Promise<{ successCount: number; processedCount: number }> => {
+    const batchPromises = days.map(async (day, index) => {
+        const globalIndex = startIndex + index;
+        const dateStr = new Date(day * 1000).toISOString().split('T')[0];
+
+        try {
+            const price = await fetchPriceFromAlchemy(alchemy, token, day, network);
+            if (price !== null) {
+                await TokenPrice.updateOne(
+                    { token, network, date: day },
+                    { $set: { price } },
+                    { upsert: true }
+                );
+
+                // Clear Redis cache for this specific price entry
+                const cacheKey = `price:${token}:${network}:${day}`;
+                await redis.del(cacheKey);
+                console.log(`🗑️ Cleared Redis cache for ${cacheKey}`);
+
+                console.log(`✅ Batch day ${globalIndex + 1}: Price $${price} stored for ${dateStr}`);
+                return { success: true, price };
+            } else {
+                console.log(`❌ Batch day ${globalIndex + 1}: No price available for ${dateStr}`);
+                return { success: false, price: null };
+            }
+        } catch (error) {
+            console.error(`❌ Batch day ${globalIndex + 1}: Error processing ${dateStr}:`, error);
+            return { success: false, price: null, error };
+        }
+    });
+
+    const results = await Promise.allSettled(batchPromises);
+    let successCount = 0;
+
+    results.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value.success) {
+            successCount++;
+        }
+    });
+
+    return { successCount, processedCount: days.length };
 };
 
 const worker = new Worker('price-history', async job => {
     const { token, network } = job.data;
     const alchemy = getAlchemy(network);
     const now = Math.floor(Date.now() / 1000);
+    const BATCH_SIZE = 5;
 
     console.log(`🚀 Starting job for ${token} on ${network}`);
 
@@ -72,56 +116,64 @@ const worker = new Worker('price-history', async job => {
         const creation = await getTokenCreationDate(alchemy, token, network);
         console.log(`📅 Token creation date: ${new Date(creation * 1000).toISOString()}`);
 
-        // Process all days from now backwards to creation date
-        const days = getDailyTimestamps(creation, now);
-        console.log(`📊 Processing ${days.length} days (from latest to creation date)`);
+        // Use timeUtils for proper daily bucket handling
+        const allDays = getDailyTimestamps(creation, now);
+        // Reverse the array to process from latest to creation date
+        const reversedDays = allDays.reverse();
+        console.log(`📊 Processing ${reversedDays.length} days in batches of ${BATCH_SIZE} (from latest to creation date, timezone-independent UTC daily buckets)`);
 
-        let processedCount = 0;
-        let successCount = 0;
+        let totalProcessedCount = 0;
+        let totalSuccessCount = 0;
 
-        for (const day of days) {
-            // Check if job has been cancelled - check state directly
+        // Process days in batches (from latest to creation date)
+        for (let i = 0; i < reversedDays.length; i += BATCH_SIZE) {
+            // Check if job has been cancelled
             const currentState = await job.getState();
             if (currentState === 'failed') {
                 console.log(`🛑 Job ${job.id} was cancelled, stopping processing`);
                 return;
             }
 
-            processedCount++;
-            const dateStr = new Date(day * 1000).toISOString().split('T')[0];
-            console.log(`⏳ Processing day ${processedCount}/${days.length}: ${dateStr} (${processedCount === 1 ? 'latest' : processedCount === days.length ? 'oldest' : 'recent'})`);
+            const batch = reversedDays.slice(i, i + BATCH_SIZE);
+            console.log(`📦 Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(reversedDays.length / BATCH_SIZE)} (days ${i + 1}-${Math.min(i + BATCH_SIZE, reversedDays.length)})`);
+
+            const { successCount, processedCount } = await processBatch(
+                alchemy,
+                token,
+                network,
+                batch,
+                i
+            );
+
+            totalProcessedCount += processedCount;
+            totalSuccessCount += successCount;
 
             // Update progress
-            await job.updateProgress(Math.round((processedCount / days.length) * 100));
+            await job.updateProgress(Math.round((totalProcessedCount / allDays.length) * 100));
 
-            let price = await fetchPriceFromAlchemy(alchemy, token, day, network);
-            if (price !== null) {
-                await TokenPrice.updateOne(
-                    { token, network, date: day },
-                    { $set: { price } },
-                    { upsert: true }
-                );
-                successCount++;
-                console.log(`✅ Day ${processedCount}: Price $${price} stored`);
-            } else {
-                console.log(`❌ Day ${processedCount}: No price available`);
-            }
-
-            // Add small delay to avoid rate limiting, but check for cancellation more frequently
-            for (let i = 0; i < 5; i++) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                // Check for cancellation every second
-                const currentState = await job.getState();
-                if (currentState === 'failed') {
-                    console.log(`🛑 Job ${job.id} was cancelled during delay, stopping processing`);
-                    return;
+            // Add delay between batches to avoid rate limiting
+            if (i + BATCH_SIZE < reversedDays.length) {
+                console.log(`⏳ Waiting 3 seconds before next batch...`);
+                for (let j = 0; j < 3; j++) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    // Check for cancellation during delay
+                    const currentState = await job.getState();
+                    if (currentState === 'failed') {
+                        console.log(`🛑 Job ${job.id} was cancelled during delay, stopping processing`);
+                        return;
+                    }
                 }
             }
         }
 
-        console.log(`🎉 Job completed! Processed ${processedCount} days, stored ${successCount} prices for ${token} on ${network}`);
+        console.log(`🎉 Job completed! Processed ${totalProcessedCount} days, stored ${totalSuccessCount} prices for ${token} on ${network}`);
     } catch (err) {
-        console.error('❌ Worker error:', err);
+        if (err instanceof QuotaExceededError) {
+            console.error('❌ Worker stopped: Alchemy API quota exceeded.');
+            await job.moveToFailed(new Error(err.message), 'quota-exceeded');
+            return;
+        }
+        console.error('❌ Worker error:', (err as Error));
         throw err; // Re-throw to mark job as failed
     }
 }, {
@@ -134,10 +186,10 @@ worker.on('completed', job => {
 
 worker.on('failed', (job, err) => {
     if (err.message && err.message.includes('Job cancelled by user')) {
-        console.log(` Job ${job?.id} was cancelled by user`);
+        console.log(`🛑 Job ${job?.id} was cancelled by user`);
     } else {
         console.error(`❌ Job ${job?.id} failed:`, err);
     }
 });
 
-console.log(' Worker started and waiting for jobs...'); 
+console.log('🔄 Worker started and waiting for jobs...'); 

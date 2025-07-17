@@ -220,7 +220,7 @@ export default function PriceQuery() {
             {/* Results */}
             {error && (
                 <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-                    <p className="text-red-400">{error}</p>
+                    <p className="text-red-400 font-bold">{error}</p>
                 </div>
             )}
 

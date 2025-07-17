@@ -51,9 +51,28 @@ router.post('/price', async (req, res) => {
             await redis.set(cacheKey, price, 'EX', 300);
             return res.json({ price, source: 'alchemy' });
         }
+        // Should not reach here, but just in case
         return res.status(404).json({ error: 'Price not found and interpolation not possible' });
+    } catch (err: any) {
+        // Surface backend error to frontend
+        return res.status(404).json({ error: err.message || 'Failed to fetch price' });
+    }
+});
+
+// Fetch price history for a token/network
+router.post('/price-history', async (req, res) => {
+    const { token, network } = req.body;
+    if (!token || !network) {
+        return res.status(400).json({ error: 'token and network required' });
+    }
+    try {
+        const history = await TokenPrice.find({ token, network }).sort({ date: 1 });
+        if (!history || history.length === 0) {
+            return res.status(404).json({ error: 'No price history found for this token/network.' });
+        }
+        res.json({ history });
     } catch (err) {
-        return res.status(500).json({ error: 'Failed to fetch price' });
+        res.status(500).json({ error: 'Failed to fetch price history' });
     }
 });
 

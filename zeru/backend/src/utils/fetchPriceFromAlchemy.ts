@@ -1,5 +1,61 @@
 import { Alchemy } from 'alchemy-sdk';
 
+// Custom error for quota exceeded
+export class QuotaExceededError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'QuotaExceededError';
+    }
+}
+
+// Enhanced retry function
+async function retry<T>(
+    fn: () => Promise<T>,
+    options: { retries: number; minTimeout: number; maxTimeout: number } = { retries: 3, minTimeout: 1000, maxTimeout: 30000 }
+): Promise<T> {
+    let lastError: Error;
+
+    for (let i = 0; i <= options.retries; i++) {
+        try {
+            return await fn();
+        } catch (error: any) {
+            // Check for Alchemy quota exceeded
+            if (error?.status === 429 && error?.message?.includes('exceeded its limit')) {
+                throw new QuotaExceededError('Alchemy API quota exceeded. Please upgrade your plan or wait for quota reset.');
+            }
+            if (error?.response) {
+                // Try to parse error body for quota message
+                try {
+                    const body = typeof error.response === 'string' ? JSON.parse(error.response) : error.response;
+                    if (body?.error?.message?.includes('exceeded its limit')) {
+                        throw new QuotaExceededError('Alchemy API quota exceeded. Please upgrade your plan or wait for quota reset.');
+                    }
+                } catch { }
+            }
+            lastError = error;
+
+            // Don't retry on 4xx errors (except 429)
+            if (error.status >= 400 && error.status < 500 && error.status !== 429) {
+                throw error;
+            }
+
+            if (i === options.retries) {
+                throw error;
+            }
+
+            // Exponential backoff
+            const delay = Math.min(
+                options.minTimeout * Math.pow(2, i),
+                options.maxTimeout
+            );
+
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+
+    throw lastError!;
+}
+
 const ALCHEMY_PRICES_API_KEY = 'sUY2wbVYzREi6QSSC7UTT';
 const ALCHEMY_PRICES_BASE_URL = 'https://api.g.alchemy.com/prices/v1';
 
@@ -32,28 +88,23 @@ export async function fetchPriceFromAlchemy(
             return alchemyPrice;
         }
 
-        // Fallback to CoinGecko for historical data
-        console.log(`🔄 Alchemy Historical API failed, trying CoinGecko fallback...`);
-        const coinGeckoPrice = await tryCoinGeckoAPI(token, timestamp);
-        if (coinGeckoPrice !== null) {
-            return coinGeckoPrice;
-        }
-
         // Last resort: try Alchemy current price (but only for recent dates)
         const now = Math.floor(Date.now() / 1000);
         const daysDiff = (now - timestamp) / (24 * 60 * 60);
 
         if (daysDiff <= 7) { // Only use current price for dates within last 7 days
             console.log(`🔄 Trying Alchemy current price as last resort...`);
-            return await tryAlchemyCurrentPriceAPI(token, network);
+            const currentPrice = await tryAlchemyCurrentPriceAPI(token, network);
+            if (currentPrice !== null) {
+                return currentPrice;
+            }
         }
 
-        console.log(`❌ No price data available for ${token} at ${new Date(timestamp * 1000).toISOString()}`);
-        return null;
-
+        // If all Alchemy attempts fail, throw a clear error
+        throw new Error(`No price data available for ${token} at ${new Date(timestamp * 1000).toISOString()}`);
     } catch (error) {
-        console.error('❌ Error fetching price:', error);
-        return null;
+        // Surface the error for the frontend to display
+        throw error;
     }
 }
 
@@ -84,11 +135,14 @@ async function tryAlchemyHistoricalAPI(token: string, timestamp: number, network
 
         console.log(`📤 Request body:`, JSON.stringify(requestBody, null, 2));
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
-        });
+        const response = await retry(
+            () => fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+            }),
+            { retries: 3, minTimeout: 1000, maxTimeout: 30000 }
+        );
 
         if (response.ok) {
             const data = await response.json();
@@ -132,11 +186,14 @@ async function tryAlchemyCurrentPriceAPI(token: string, network: string): Promis
             }]
         };
 
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
-        });
+        const response = await retry(
+            () => fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+            }),
+            { retries: 3, minTimeout: 1000, maxTimeout: 30000 }
+        );
 
         if (response.ok) {
             const data = await response.json();
@@ -167,62 +224,6 @@ async function tryAlchemyCurrentPriceAPI(token: string, network: string): Promis
 
     } catch (error) {
         console.error('❌ Alchemy Current Price API error:', error);
-        return null;
-    }
-}
-
-async function tryCoinGeckoAPI(token: string, timestamp: number): Promise<number | null> {
-    try {
-        const coinId = COINGECKO_TOKEN_MAP[token.toLowerCase()];
-        if (!coinId) {
-            console.log(`❌ Token ${token} not found in CoinGecko mapping`);
-            return null;
-        }
-
-        console.log(`🔍 Fetching from CoinGecko: ${coinId}`);
-
-        // Try historical price first
-        const dateStr = new Date(timestamp * 1000).toISOString().split('T')[0];
-        const historicalUrl = `https://api.coingecko.com/api/v3/coins/${coinId}/history?date=${dateStr}`;
-
-        console.log(`📤 CoinGecko historical URL: ${historicalUrl}`);
-
-        const historicalResponse = await fetch(historicalUrl);
-
-        if (historicalResponse.ok) {
-            const historicalData = await historicalResponse.json();
-            console.log(`📊 CoinGecko historical response:`, JSON.stringify(historicalData, null, 2));
-
-            if (historicalData.market_data && historicalData.market_data.current_price) {
-                const price = historicalData.market_data.current_price.usd;
-                console.log(`✅ CoinGecko historical price: $${price}`);
-                return price;
-            } else {
-                console.log(`⚠️ CoinGecko historical data missing market_data or current_price`);
-            }
-        } else {
-            console.log(`❌ CoinGecko historical API failed: ${historicalResponse.status}`);
-        }
-
-        // Fallback to current price only if historical failed
-        console.log(`🔄 CoinGecko historical failed, trying current price...`);
-        const currentUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`;
-        const currentResponse = await fetch(currentUrl);
-
-        if (currentResponse.ok) {
-            const currentData = await currentResponse.json();
-            if (currentData[coinId] && currentData[coinId].usd) {
-                const price = currentData[coinId].usd;
-                console.log(`✅ CoinGecko current price: $${price}`);
-                return price;
-            }
-        }
-
-        console.log(`❌ CoinGecko API failed`);
-        return null;
-
-    } catch (error) {
-        console.error('❌ CoinGecko API error:', error);
         return null;
     }
 } 

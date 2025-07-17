@@ -42,10 +42,39 @@ export default function ScheduleFetch() {
     const [page, setPage] = useState(1);
     const [limit] = useState(10);
 
+    // Progress state for the most recently scheduled job
+    const [jobProgress, setJobProgress] = useState<number | null>(null);
+    const [jobState, setJobState] = useState<string | null>(null);
+    const [jobPolling, setJobPolling] = useState(false);
+
     // Load jobs on component mount and after scheduling
     useEffect(() => {
         loadJobs();
     }, [page]);
+
+    // Poll job status if a new job is scheduled
+    useEffect(() => {
+        if (result && result.jobId) {
+            setJobPolling(true);
+            setJobProgress(0);
+            setJobState('waiting');
+            const interval = setInterval(async () => {
+                try {
+                    const status = await scheduleApi.getStatus(result.jobId!);
+                    setJobProgress(status.progress ?? null);
+                    setJobState(status.state ?? null);
+                    if (status.state === 'completed' || status.state === 'failed' || status.state === 'cancelled') {
+                        clearInterval(interval);
+                        setJobPolling(false);
+                    }
+                } catch (err) {
+                    clearInterval(interval);
+                    setJobPolling(false);
+                }
+            }, 3000);
+            return () => clearInterval(interval);
+        }
+    }, [result]);
 
     const loadJobs = async () => {
         setJobsLoading(true);
@@ -82,7 +111,8 @@ export default function ScheduleFetch() {
         }
     };
 
-    const handleStopJob = async (jobId: string) => {
+    const handleStopJob = async (jobId: string | undefined) => {
+        if (!jobId) return;
         try {
             await scheduleApi.stop(jobId);
             // Reload jobs after stopping
@@ -220,6 +250,23 @@ export default function ScheduleFetch() {
                 </div>
             )}
 
+            {/* Progress Bar for scheduled job */}
+            {result && result.jobId && jobPolling && (
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 mb-6">
+                    <h3 className="text-lg font-bold text-white mb-2">Job Progress</h3>
+                    <div className="w-full bg-gray-700 rounded-full h-4 mb-2">
+                        <div
+                            className={`h-4 rounded-full transition-all duration-500 ${jobState === 'completed' ? 'bg-green-500' : jobState === 'failed' ? 'bg-red-500' : 'bg-blue-500'}`}
+                            style={{ width: `${jobProgress ?? 0}%` }}
+                        ></div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <span className={`text-sm font-medium ${jobState === 'completed' ? 'text-green-400' : jobState === 'failed' ? 'text-red-400' : 'text-blue-400'}`}>{JOB_STATE_LABELS[jobState as keyof typeof JOB_STATE_LABELS] || jobState}</span>
+                        <span className="text-white/60 text-xs">{jobProgress !== null ? `${jobProgress}%` : ''}</span>
+                    </div>
+                </div>
+            )}
+
             {/* All Jobs */}
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
                 <div className="flex items-center justify-between mb-6">
@@ -250,8 +297,8 @@ export default function ScheduleFetch() {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {jobs.map((job) => (
-                            <div key={job.jobId} className="bg-white/5 rounded-lg p-4 border border-white/10">
+                        {jobs.map((job, idx) => (
+                            <div key={job.jobId || idx} className="bg-white/5 rounded-lg p-4 border border-white/10">
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center space-x-3">
                                         <div className={`w-3 h-3 rounded-full ${JOB_STATE_COLORS[job.state as keyof typeof JOB_STATE_COLORS] || 'bg-gray-500'}`}></div>
@@ -261,7 +308,7 @@ export default function ScheduleFetch() {
                                     </div>
                                     <div className="flex items-center space-x-2">
                                         <span className="text-white/60 text-sm">ID: {job.jobId}</span>
-                                        {(job.state === 'waiting' || job.state === 'active' || job.state === 'delayed') && (
+                                        {(job.jobId && (job.state === 'waiting' || job.state === 'active' || job.state === 'delayed')) && (
                                             <button
                                                 onClick={() => handleStopJob(job.jobId)}
                                                 className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-all"
