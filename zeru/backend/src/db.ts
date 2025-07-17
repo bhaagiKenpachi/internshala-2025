@@ -15,7 +15,13 @@ const redisConfig = {
     retryDelayOnFailover: 100,
     maxRetriesPerRequest: 3,
     lazyConnect: true,
-    showFriendlyErrorStack: true
+    showFriendlyErrorStack: true,
+    // Add connection timeout
+    connectTimeout: 10000,
+    // Add command timeout
+    commandTimeout: 5000,
+    // Add TLS configuration for Railway Redis
+    tls: process.env.REDIS_HOST?.includes('rlwy.net') ? {} : undefined
 };
 
 export const redis = new Redis(redisConfig);
