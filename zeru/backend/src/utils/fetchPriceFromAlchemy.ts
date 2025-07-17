@@ -56,7 +56,7 @@ async function retry<T>(
     throw lastError!;
 }
 
-const ALCHEMY_PRICES_API_KEY = 'sUY2wbVYzREi6QSSC7UTT';
+const ALCHEMY_PRICES_API_KEY = process.env.ALCHEMY_PRICE_KEY as string;
 const ALCHEMY_PRICES_BASE_URL = 'https://api.g.alchemy.com/prices/v1';
 
 // Map network to correct Alchemy format
