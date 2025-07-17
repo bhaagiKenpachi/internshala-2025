@@ -14,6 +14,7 @@ export default function PriceQuery() {
     const [token, setToken] = useState('');
     const [network, setNetwork] = useState('ethereum');
     const [timestamp, setTimestamp] = useState('');
+    const [selectedDateTime, setSelectedDateTime] = useState('');
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<PriceResponse | null>(null);
     const [error, setError] = useState('');
@@ -24,11 +25,16 @@ export default function PriceQuery() {
         setError('');
         setResult(null);
 
+        // Use selectedDateTime if available, otherwise use timestamp
+        const finalTimestamp = selectedDateTime
+            ? Math.floor(new Date(selectedDateTime).getTime() / 1000)
+            : parseInt(timestamp);
+
         try {
             const response = await priceApi.query({
                 token,
                 network,
-                timestamp: parseInt(timestamp),
+                timestamp: finalTimestamp,
             });
 
             setResult(response);
@@ -36,6 +42,14 @@ export default function PriceQuery() {
             setError(err.response?.data?.error || 'Failed to fetch price');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDateTimeChange = (dateTime: string) => {
+        setSelectedDateTime(dateTime);
+        if (dateTime) {
+            const timestamp = Math.floor(new Date(dateTime).getTime() / 1000);
+            setTimestamp(timestamp.toString());
         }
     };
 
@@ -108,10 +122,31 @@ export default function PriceQuery() {
                         </select>
                     </div>
 
-                    {/* Timestamp */}
+                    {/* Date & Time Selection */}
                     <div>
                         <label className="block text-white/80 text-sm font-medium mb-2">
-                            Timestamp (Unix)
+                            Date & Time
+                        </label>
+                        <div className="space-y-3">
+                            <input
+                                type="datetime-local"
+                                value={selectedDateTime}
+                                onChange={(e) => handleDateTimeChange(e.target.value)}
+                                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            />
+
+                            <div className="text-white/60 text-sm">
+                                {selectedDateTime && (
+                                    <span>Timestamp: {Math.floor(new Date(selectedDateTime).getTime() / 1000)}</span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Timestamp (Manual Input) */}
+                    <div>
+                        <label className="block text-white/80 text-sm font-medium mb-2">
+                            Timestamp (Unix) - Manual Input
                         </label>
                         <div className="space-y-3">
                             <input
@@ -126,28 +161,44 @@ export default function PriceQuery() {
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                 <button
                                     type="button"
-                                    onClick={() => setTimestamp(Math.floor(Date.now() / 1000).toString())}
+                                    onClick={() => {
+                                        const now = Math.floor(Date.now() / 1000);
+                                        setTimestamp(now.toString());
+                                        setSelectedDateTime(new Date(now * 1000).toISOString().slice(0, 16));
+                                    }}
                                     className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg text-white text-sm transition-all"
                                 >
                                     Now
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setTimestamp('1721088000')}
+                                    onClick={() => {
+                                        const oneDayAgo = Math.floor(Date.now() / 1000) - 86400;
+                                        setTimestamp(oneDayAgo.toString());
+                                        setSelectedDateTime(new Date(oneDayAgo * 1000).toISOString().slice(0, 16));
+                                    }}
                                     className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg text-white text-sm transition-all"
                                 >
                                     1 Day Ago
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setTimestamp('1721001600')}
+                                    onClick={() => {
+                                        const oneWeekAgo = Math.floor(Date.now() / 1000) - (7 * 86400);
+                                        setTimestamp(oneWeekAgo.toString());
+                                        setSelectedDateTime(new Date(oneWeekAgo * 1000).toISOString().slice(0, 16));
+                                    }}
                                     className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg text-white text-sm transition-all"
                                 >
                                     1 Week Ago
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setTimestamp('1718668800')}
+                                    onClick={() => {
+                                        const oneMonthAgo = Math.floor(Date.now() / 1000) - (30 * 86400);
+                                        setTimestamp(oneMonthAgo.toString());
+                                        setSelectedDateTime(new Date(oneMonthAgo * 1000).toISOString().slice(0, 16));
+                                    }}
                                     className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/20 rounded-lg text-white text-sm transition-all"
                                 >
                                     1 Month Ago
@@ -158,7 +209,7 @@ export default function PriceQuery() {
 
                     <button
                         type="submit"
-                        disabled={loading || !token || !timestamp}
+                        disabled={loading || !token || (!timestamp && !selectedDateTime)}
                         className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all"
                     >
                         {loading ? 'Querying...' : 'Query Price'}
@@ -196,7 +247,7 @@ export default function PriceQuery() {
                         <div className="bg-white/5 rounded-lg p-4">
                             <p className="text-white/60 text-sm">Timestamp</p>
                             <p className="text-white font-medium">
-                                {new Date(parseInt(timestamp) * 1000).toLocaleString()}
+                                {new Date((selectedDateTime ? Math.floor(new Date(selectedDateTime).getTime() / 1000) : parseInt(timestamp)) * 1000).toLocaleString()}
                             </p>
                         </div>
                     </div>

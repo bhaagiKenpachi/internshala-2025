@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { priceApi } from '@/services/api';
 
 interface PriceData {
     date: number;
@@ -18,6 +18,7 @@ const COMMON_TOKENS = [
 
 export default function PriceHistory() {
     const [selectedToken, setSelectedToken] = useState('');
+    const [customAddress, setCustomAddress] = useState('');
     const [network, setNetwork] = useState('ethereum');
     const [loading, setLoading] = useState(false);
     const [priceHistory, setPriceHistory] = useState<PriceData[]>([]);
@@ -53,6 +54,7 @@ export default function PriceHistory() {
 
     const handleTokenChange = (tokenAddress: string) => {
         setSelectedToken(tokenAddress);
+        setCustomAddress('');
         setLoading(true);
 
         // Simulate API call delay
@@ -61,6 +63,50 @@ export default function PriceHistory() {
             setPriceHistory(data);
             setLoading(false);
         }, 1000);
+    };
+
+    const handleCustomAddressSubmit = async () => {
+        if (!customAddress.trim()) return;
+
+        setSelectedToken('');
+        setLoading(true);
+        setError('');
+
+        try {
+            // Generate timestamps for the last 30 days
+            const now = Math.floor(Date.now() / 1000);
+            const timestamps = [];
+            for (let i = 30; i >= 0; i--) {
+                timestamps.push(now - (i * 24 * 60 * 60));
+            }
+
+            // Fetch price data for each timestamp
+            const priceData: PriceData[] = [];
+            for (const timestamp of timestamps) {
+                try {
+                    const response = await priceApi.query({
+                        token: customAddress,
+                        network,
+                        timestamp
+                    });
+
+                    priceData.push({
+                        date: timestamp,
+                        price: response.price,
+                        source: response.source
+                    });
+                } catch (err) {
+                    // Skip failed requests, continue with available data
+                    console.log(`Failed to fetch price for ${new Date(timestamp * 1000).toISOString()}`);
+                }
+            }
+
+            setPriceHistory(priceData);
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Failed to fetch price history');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const formatPrice = (price: number) => {
@@ -108,8 +154,8 @@ export default function PriceHistory() {
                                     key={t.address}
                                     onClick={() => handleTokenChange(t.address)}
                                     className={`px-4 py-3 rounded-lg border transition-all ${selectedToken === t.address
-                                            ? 'bg-purple-600 border-purple-500 text-white'
-                                            : 'bg-white/5 hover:bg-white/10 border-white/20 text-white'
+                                        ? 'bg-purple-600 border-purple-500 text-white'
+                                        : 'bg-white/5 hover:bg-white/10 border-white/20 text-white'
                                         }`}
                                 >
                                     <div className="font-medium">{t.symbol}</div>
@@ -117,6 +163,32 @@ export default function PriceHistory() {
                                 </button>
                             ))}
                         </div>
+                    </div>
+
+                    {/* Custom Address Input */}
+                    <div>
+                        <label className="block text-white/80 text-sm font-medium mb-2">
+                            Or Enter Custom Token Address
+                        </label>
+                        <div className="flex space-x-2">
+                            <input
+                                type="text"
+                                value={customAddress}
+                                onChange={(e) => setCustomAddress(e.target.value)}
+                                placeholder="0x..."
+                                className="flex-1 px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            />
+                            <button
+                                onClick={handleCustomAddressSubmit}
+                                disabled={loading || !customAddress.trim()}
+                                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all"
+                            >
+                                {loading ? 'Fetching...' : 'Fetch History'}
+                            </button>
+                        </div>
+                        <p className="text-white/60 text-xs mt-2">
+                            Enter a token contract address to fetch real price history data
+                        </p>
                     </div>
 
                     {/* Network Selection */}
@@ -141,8 +213,15 @@ export default function PriceHistory() {
                 <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
                     <div className="flex items-center justify-center space-x-3">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
-                        <span className="text-white">Loading price history...</span>
+                        <span className="text-white">
+                            {customAddress ? 'Fetching real price history...' : 'Loading price history...'}
+                        </span>
                     </div>
+                    {customAddress && (
+                        <div className="mt-4 text-center">
+                            <p className="text-white/60 text-sm">This may take a few moments as we fetch data for the last 30 days</p>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -243,12 +322,12 @@ export default function PriceHistory() {
             )}
 
             {/* No Data State */}
-            {!selectedToken && !loading && (
+            {!selectedToken && !customAddress && !loading && (
                 <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
                     <div className="text-center">
                         <div className="text-6xl mb-4">📊</div>
-                        <h3 className="text-xl font-bold text-white mb-2">Select a Token</h3>
-                        <p className="text-white/60">Choose a token above to view its price history and charts.</p>
+                        <h3 className="text-xl font-bold text-white mb-2">Select a Token or Enter Address</h3>
+                        <p className="text-white/60">Choose a predefined token or enter a custom token address to view its price history and charts.</p>
                     </div>
                 </div>
             )}

@@ -19,8 +19,8 @@ export default function Home() {
           <button
             onClick={() => setActiveTab('query')}
             className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-all ${activeTab === 'query'
-                ? 'bg-white text-slate-900 shadow-lg'
-                : 'text-white/70 hover:text-white hover:bg-white/5'
+              ? 'bg-white text-slate-900 shadow-lg'
+              : 'text-white/70 hover:text-white hover:bg-white/5'
               }`}
           >
             Price Query
@@ -28,8 +28,8 @@ export default function Home() {
           <button
             onClick={() => setActiveTab('schedule')}
             className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-all ${activeTab === 'schedule'
-                ? 'bg-white text-slate-900 shadow-lg'
-                : 'text-white/70 hover:text-white hover:bg-white/5'
+              ? 'bg-white text-slate-900 shadow-lg'
+              : 'text-white/70 hover:text-white hover:bg-white/5'
               }`}
           >
             Schedule Fetch
@@ -37,8 +37,8 @@ export default function Home() {
           <button
             onClick={() => setActiveTab('history')}
             className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-all ${activeTab === 'history'
-                ? 'bg-white text-slate-900 shadow-lg'
-                : 'text-white/70 hover:text-white hover:bg-white/5'
+              ? 'bg-white text-slate-900 shadow-lg'
+              : 'text-white/70 hover:text-white hover:bg-white/5'
               }`}
           >
             Price History

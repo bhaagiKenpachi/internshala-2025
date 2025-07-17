@@ -1,9 +1,13 @@
 import { Worker } from 'bullmq';
 import dotenv from 'dotenv';
 dotenv.config();
+import { connectMongo } from './db';
 import { TokenPrice } from './models/TokenPrice';
 import { getAlchemy } from './routes/price';
 import { fetchPriceFromAlchemy } from './utils/fetchPriceFromAlchemy';
+
+// Connect to MongoDB
+connectMongo().catch(console.error);
 
 const getTokenCreationDate = async (alchemy: any, token: string, network: string): Promise<number> => {
     const url = network === 'ethereum'
@@ -47,12 +51,12 @@ const getTokenCreationDate = async (alchemy: any, token: string, network: string
     throw new Error('Block timestamp not found');
 };
 
-const getDailyTimestamps = (from: number, to: number, maxDays: number = 7): number[] => {
+const getDailyTimestamps = (from: number, to: number): number[] => {
     const days = [];
-    let current = Math.max(from, to - (maxDays * 86400)); // Start from maxDays ago or creation date, whichever is later
-    while (current <= to) {
+    let current = to; // Start from latest date (current time)
+    while (current >= from) {
         days.push(current);
-        current += 86400; // add 1 day
+        current -= 86400; // subtract 1 day (go backwards)
     }
     return days;
 };
@@ -68,16 +72,27 @@ const worker = new Worker('price-history', async job => {
         const creation = await getTokenCreationDate(alchemy, token, network);
         console.log(`📅 Token creation date: ${new Date(creation * 1000).toISOString()}`);
 
-        // Process only last 7 days for faster testing
-        const days = getDailyTimestamps(creation, now, 7);
-        console.log(`📊 Processing ${days.length} days (last 7 days for testing)`);
+        // Process all days from now backwards to creation date
+        const days = getDailyTimestamps(creation, now);
+        console.log(`📊 Processing ${days.length} days (from latest to creation date)`);
 
         let processedCount = 0;
         let successCount = 0;
 
         for (const day of days) {
+            // Check if job has been cancelled - check state directly
+            const currentState = await job.getState();
+            if (currentState === 'failed') {
+                console.log(`🛑 Job ${job.id} was cancelled, stopping processing`);
+                return;
+            }
+
             processedCount++;
-            console.log(`⏳ Processing day ${processedCount}/${days.length}: ${new Date(day * 1000).toISOString().split('T')[0]}`);
+            const dateStr = new Date(day * 1000).toISOString().split('T')[0];
+            console.log(`⏳ Processing day ${processedCount}/${days.length}: ${dateStr} (${processedCount === 1 ? 'latest' : processedCount === days.length ? 'oldest' : 'recent'})`);
+
+            // Update progress
+            await job.updateProgress(Math.round((processedCount / days.length) * 100));
 
             let price = await fetchPriceFromAlchemy(alchemy, token, day, network);
             if (price !== null) {
@@ -92,13 +107,22 @@ const worker = new Worker('price-history', async job => {
                 console.log(`❌ Day ${processedCount}: No price available`);
             }
 
-            // Add small delay to avoid rate limiting
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Add small delay to avoid rate limiting, but check for cancellation more frequently
+            for (let i = 0; i < 5; i++) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                // Check for cancellation every second
+                const currentState = await job.getState();
+                if (currentState === 'failed') {
+                    console.log(`🛑 Job ${job.id} was cancelled during delay, stopping processing`);
+                    return;
+                }
+            }
         }
 
         console.log(`🎉 Job completed! Processed ${processedCount} days, stored ${successCount} prices for ${token} on ${network}`);
     } catch (err) {
         console.error('❌ Worker error:', err);
+        throw err; // Re-throw to mark job as failed
     }
 }, {
     connection: { url: process.env.REDIS_URL || 'redis://localhost:6379' },
@@ -109,7 +133,11 @@ worker.on('completed', job => {
 });
 
 worker.on('failed', (job, err) => {
-    console.error(`❌ Job ${job?.id} failed:`, err);
+    if (err.message && err.message.includes('Job cancelled by user')) {
+        console.log(` Job ${job?.id} was cancelled by user`);
+    } else {
+        console.error(`❌ Job ${job?.id} failed:`, err);
+    }
 });
 
-console.log('🔄 Worker started and waiting for jobs...'); 
+console.log(' Worker started and waiting for jobs...'); 
