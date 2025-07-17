@@ -8,5 +8,10 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "date-fns": "^4.1.0",
+    "p-limit": "^6.2.0",
+    "p-retry": "^6.2.1"
+  }
 }
