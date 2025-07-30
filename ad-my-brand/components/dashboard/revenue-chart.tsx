@@ -10,8 +10,27 @@ interface RevenueChartProps {
 }
 
 export function RevenueChart({ data }: RevenueChartProps) {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg p-4 shadow-lg animate-in fade-in-0 zoom-in-95 duration-200">
+          <p className="text-foreground font-medium mb-2">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} className="text-sm" style={{ color: entry.color }}>
+              <span className="font-semibold">Revenue:</span> ${entry.value.toLocaleString()}
+            </p>
+          ))}
+        </div>
+      )
+    }
+    return null
+  }
+
   return (
-    <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <Card className="border-0 shadow-lg bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 animate-fade-in hover:shadow-lg transition-all duration-300">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div>
@@ -29,31 +48,30 @@ export function RevenueChart({ data }: RevenueChartProps) {
       <CardContent>
         <ResponsiveContainer width="100%" height={350}>
           <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              stroke={isDark ? "hsl(217 32% 17%)" : "hsl(210 40% 92%)"} 
+            />
             <XAxis 
               dataKey="name" 
-              className="text-sm"
-              tick={{ fontSize: 12 }}
+              stroke={isDark ? "hsl(215 20% 65%)" : "hsl(215 25% 27%)"}
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
             />
             <YAxis 
-              className="text-sm"
-              tick={{ fontSize: 12 }}
+              stroke={isDark ? "hsl(215 20% 65%)" : "hsl(215 25% 27%)"}
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
               tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
             />
-            <Tooltip 
-              formatter={(value: number) => [`$${value.toLocaleString()}`, 'Revenue']}
-              labelStyle={{ color: '#374151' }}
-              contentStyle={{ 
-                backgroundColor: 'white', 
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-              }}
-            />
+            <Tooltip content={<CustomTooltip />} />
             <Bar 
               dataKey="value" 
               fill="url(#colorRevenue)"
               radius={[4, 4, 0, 0]}
+              className="transition-all duration-200 hover:opacity-80"
             />
             <defs>
               <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
