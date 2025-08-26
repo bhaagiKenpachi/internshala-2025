@@ -1,0 +1,96 @@
+OLX Car Cover Search Results
+==================================================
+
+Search Query: Car Cover
+Search URL: https://www.olx.in/items/q-car-cover
+Total Results: 11
+Scraped At: 2025-08-26 09:56:18
+
+Listing 1:
+  Title: Small car cover
+  Price: ₹ 300
+  Location: Puthur, Chennai
+  Link: https://www.olx.in/item/other-household-items-c293-small-car-cover-in-puthur-chennai-iid-1814312723
+  Posted: Yesterday
+------------------------------
+
+Listing 2:
+  Title: Maruti Suzuki fronx car cover
+  Price: ₹ 1,050
+  Location: Gulzar Nagar, Bareilly
+  Link: https://www.olx.in/item/mobile-phones-c1453-used-other-mobiles-in-gulzar-nagar-bareilly-iid-1817986471
+  Posted: Yesterday
+------------------------------
+
+Listing 3:
+  Title: Maruti Suzuki fronx car cover
+  Price: ₹ 1,050
+  Location: Gulzar Nagar, Bareilly
+  Link: https://www.olx.in/item/spare-parts-c1585-other-spare-parts-in-gulzar-nagar-bareilly-iid-1817978433
+  Posted: Yesterday
+------------------------------
+
+Listing 4:
+  Title: Baleno Car Body Cover
+  Price: ₹ 1,200
+  Location: Kanakpura, Jaipur
+  Link: https://www.olx.in/item/spare-parts-c1585-other-spare-parts-in-kanakpura-jaipur-iid-1817977216
+  Posted: Yesterday
+------------------------------
+
+Listing 5:
+  Title: 4BHK,5 Washroom, North Facing ,2 car Covered parking, AdequatSun light
+  Price: ₹ 85,00,000
+  Location: Bill Road, Vadodara
+  Link: https://www.olx.in/item/for-sale-houses-apartments-c1725-4-bhk-apartments-1916-sq-ft-in-bill-road-vadodara-iid-1816477033
+  Posted: Yesterday
+------------------------------
+
+Listing 6:
+  Title: Hyundai Exter Car Cover
+  Price: ₹ 500
+  Location: Bagalakunte, Bengaluru
+  Link: https://www.olx.in/item/spare-parts-c1585-other-spare-parts-in-bagalakunte-bengaluru-iid-1817951090
+  Posted: Yesterday
+------------------------------
+
+Listing 7:
+  Title: Car body cover available in wholesale market price
+  Price: ₹ 500
+  Location: Periyamet, Chennai
+  Link: https://www.olx.in/item/spare-parts-c1585-other-spare-parts-in-periyamet-chennai-iid-1813208782
+  Posted: Aug 15
+------------------------------
+
+Listing 8:
+  Title: Car Cover Brezza
+  Price: ₹ 400
+  Location: Badkhal, Faridabad
+  Link: https://www.olx.in/item/spare-parts-c1585-other-spare-parts-in-badkhal-faridabad-iid-1817923398
+  Posted: Yesterday
+------------------------------
+
+Listing 9:
+  Title: Punch car cover
+  Price: N/A
+  Location: Chenippadi, Kumaranellur
+  Link: https://www.olx.in/item/other-services-c625-punch-car-cover-in-chenippadi-kumaranellur-iid-1817922234
+  Posted: Yesterday
+------------------------------
+
+Listing 10:
+  Title: Waterproof,Dust proof car cover
+  Price: ₹ 1,500
+  Location: Kamala Nagar, Anantapur
+  Link: https://www.olx.in/item/spare-parts-c1585-audio-other-accessories-in-kamala-nagar-anantapur-iid-1817919279
+  Posted: Yesterday
+------------------------------
+
+Listing 11:
+  Title: Jack and car cover
+  Price: N/A
+  Location: Venkateshwara Colony, Hyderabad
+  Link: https://www.olx.in/item/other-services-c625-jack-and-car-cover-in-venkateshwara-colony-hyderabad-iid-1817914675
+  Posted: Yesterday
+------------------------------
+
